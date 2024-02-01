@@ -18,5 +18,5 @@ resource "yandex_vpc_subnet" "subnets" {
   name           = "create subnet"
   zone           = var.zone
   network_id     = yandex_vpc_network.vpc.id
-  v4_cidr_blocks = ["10.10.14.0/24"]
+  v4_cidr_blocks = ["10.10.12.0/24"]
 }
