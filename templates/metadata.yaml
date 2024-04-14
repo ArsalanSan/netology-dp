@@ -1,0 +1,23 @@
+#cloud-config
+local-hostname: ${host_name}
+instance-id: rcod-${host_name}
+network:
+  version: 2
+  ethernets:
+    ens32:
+      dhcp4: false
+      addresses:
+        - ${ipv4_address}/${ipv4_netmask}
+      gateway4: ${ipv4_gateway}
+      nameservers:
+        search: [${domain_name}]
+        addresses: 
+          - ${dns1}
+wait-on-network:
+  ipv4: true
+growpart:
+  mode: growpart
+  devices: 
+    - "/dev/sda2"
+  ignore_growroot_disabled: true
+#resize_rootfs: true

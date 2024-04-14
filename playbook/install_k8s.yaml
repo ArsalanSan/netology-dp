@@ -1,0 +1,234 @@
+---
+- name: Install Cluster K8s on Almalinux 9 | Configuration all nodes
+  gather_facts: true
+  hosts: all
+  become: true
+  tasks:
+    - name: Configuration all nodes | Set hostname
+      ansible.builtin.hostname:
+        name: "{{ inventory_hostname }}"
+#        use: systemd
+
+    - name: Configuration all nodes | Disable selinux
+      ansible.posix.selinux:
+        state: disabled
+
+    - name: Configuration all nodes | Turn off swap
+      ansible.builtin.command: swapoff -a
+
+    - name: Configuration all nodes | Configure hosts file
+      ansible.builtin.lineinfile:
+        dest: /etc/hosts
+        regexp: '.*{{ item }}$'
+        line: '{{ hostvars[item].ansible_default_ipv4.address }} {{ item }}'
+        state: present
+      with_items: '{{ groups["all"] }}'
+
+    - name: Configuration all nodes | Load modules
+      ansible.builtin.shell: |
+        modprobe overlay
+        modprobe br_netfilter
+
+    - name: Configuration all nodes | Setup sysctl params
+      ansible.posix.sysctl:
+        name: "{{ item }}"
+        value: '1'
+        sysctl_set: true
+        state: present
+        reload: true
+        sysctl_file: /etc/sysctl.d/k8s.conf
+      loop:
+        "{{ sysctl_param }}"
+      when: inventory_hostname not in groups['volumes']
+
+- name: Install Cluster K8s on Almalinux 9  | Install and configuration HA proxy nodes
+  gather_facts: true
+  hosts: lbnodes
+  become: true
+  tasks:
+    - name: Install and configuration HA proxy nodes | Install haproxy and keepalived
+      ansible.builtin.dnf:
+        name:
+          - haproxy
+          # - keepalived
+        state: present
+
+    - name: Install and configuration HA proxy nodes | Copy configuration files from template for haproxy
+      ansible.builtin.template:
+        src: haproxy.cfg.j2
+        dest: /etc/haproxy/haproxy.cfg
+        owner: root
+        group: root
+        # mode: '0600'
+
+    - name: Install and configuration HA proxy nodes | Enable and started service haproxy
+      ansible.builtin.systemd:
+        name: haproxy
+        state: started
+        enabled: true
+#-----------------------------------------------------------------------------------------------
+- name: Install Cluster K8s on Almalinux 9 | Install and configuration NFS Server
+  hosts: volumes
+#  gather_facts: false
+  become: true
+  tasks:
+    - name: Install and configuration NFS Server | Install nfs-utils
+      ansible.builtin.dnf:
+        name:
+         - nfs-utils
+        state: present
+
+    - name: Create directory
+      ansible.builtin.file:
+        path: "{{ path_volume }}"
+        state: directory
+        #recurse: yes
+        owner: nobody
+        group: nobody
+        mode: "0777"
+
+    - name: Install and configuration NFS Server | Setting exports
+      ansible.builtin.lineinfile:
+        path: /etc/exports
+      #  mode: '0644'
+        line: "{{ path_volume }} 10.122.0.0/16(rw,sync,no_subtree_check)"
+        create: true
+
+    - name: Install and configuration NFS Server | Start and enable nfs service
+      ansible.builtin.systemd:
+        name: nfs-server.service
+        state: started
+        enabled: true
+#-----------------------------------------------------------------------------------------------
+- name: Install Cluster K8s on Almalinux 9 | Configuration Master and Worker K8s nodes
+  gather_facts: true
+  hosts: cluster
+  become: true
+  tasks:
+    - name: Install Cluster K8s on Almalinux 9 | Add configuration for automatically modules loaded
+      ansible.builtin.blockinfile:
+        path: /etc/modules-load.d/containerd.conf
+        create: true
+        block: |
+          overlay
+          br_netfilter
+
+    - name: Configuration Master and Worker K8s nodes | Add official Docker Repository
+      ansible.builtin.get_url:
+        url: "{{ url_docker }}"
+        dest: /etc/yum.repos.d/docker-ce.repo
+        mode: "0644"
+
+    - name: Configuration Master and Worker K8s nodes | Install the containerd package
+      ansible.builtin.dnf:
+        name: containerd
+        state: present
+
+    - name: Configuration Master and Worker K8s nodes | Create a configuration file for containerd and set it to default
+      ansible.builtin.shell: |
+        mkdir -p /etc/containerd
+        containerd config default | tee /etc/containerd/config.toml
+
+    - name: Configuration Master and Worker K8s nodes | Set cgroupdriver to systemd
+      ansible.builtin.lineinfile:
+        path: /etc/containerd/config.toml
+        regexp: 'SystemdCgroup = false'
+        line: SystemdCgroup = true
+
+    - name: Configuration Master and Worker K8s nodes | Restart containerd package
+      ansible.builtin.systemd:
+        name: containerd
+        state: restarted
+        enabled: true
+
+    - name: Configuration Master and Worker K8s nodes | Add the Kubernetes repository
+      ansible.builtin.blockinfile:
+        path: /etc/yum.repos.d/kubernetes.repo
+        create: true
+        block: |
+          [kubernetes]
+          name=Kubernetes
+          baseurl=https://pkgs.k8s.io/core:/stable:/v{{ k8s_version }}/rpm/
+          enabled=1
+          gpgcheck=1
+          gpgkey=https://pkgs.k8s.io/core:/stable:/v{{ k8s_version }}/rpm/repodata/repomd.xml.key
+          #exclude=kubelet kubeadm kubectl cri-tools kubernetes-cni
+
+    - name: Configuration Master and Worker K8s nodes | Install all Kubernetes modules (kubelet, kubeadm, kubectl)
+      ansible.builtin.dnf:
+        name: "{{ packages }}"
+        state: present
+
+    - name: Configuration Master and Worker K8s nodes | Enable kubelet
+      ansible.builtin.systemd:
+        name: kubelet
+        state: started
+        enabled: true
+
+- name: Install Cluster K8s on Almalinux 9 | Join Master and Worker nodes
+  gather_facts: true
+  hosts: cluster
+  become: true
+  tasks:
+    - name: Join Master and Worker nodes | Initializing Kubernetes cluster
+      ansible.builtin.command: |
+        kubeadm init
+        --control-plane-endpoint={{ loadbalance_host }}
+        --apiserver-cert-extra-sans={{ loadbalance_host }}
+        --pod-network-cidr={{ pod_network_cidr }}
+        --upload-certs
+      when: inventory_hostname == "master01"
+
+    - name: Join Master and Worker nodes | Set up Kubernetes for not root user
+      become: false
+      ansible.builtin.shell: |
+        mkdir -p $HOME/.kube
+        sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+        sudo chown $(id -u):$(id -g) $HOME/.kube/config
+      when: inventory_hostname == "master01"
+
+    - name: Join Master and Worker nodes | Copy config file from remote to local
+      become: false
+      ansible.builtin.fetch:
+        src: /home/{{ ansible_user }}/.kube/config
+        dest: /home/{{ ansible_user }}/.kube/
+        flat: true
+      when: inventory_hostname == "master01"
+
+    - name: Join Master and Worker nodes | Install network add-on
+      become: false
+      ansible.builtin.command: >
+        kubectl apply -f "{{ url_network_addon }}"
+      when: inventory_hostname == "master01"
+
+    - name: Join Master and Worker nodes | Command generate token join
+      ansible.builtin.command: kubeadm token create --print-join-command
+      register: join_command
+      when: inventory_hostname == "master01"
+
+    - name: Join Master and Worker nodes | Command generate certificate key
+      ansible.builtin.command: kubeadm init phase upload-certs --upload-certs
+      register: cert_key
+      when: inventory_hostname == "master01"
+
+    - name: Join Master and Worker nodes | Set join command for Masters
+      ansible.builtin.set_fact:
+        join_master: "{{ join_command.stdout_lines[0] }} --control-plane --certificate-key {{ cert_key.stdout_lines[2] }}"
+      when: inventory_hostname == "master01"
+
+    - name: Coffe time
+      ansible.builtin.pause:
+        seconds: 60
+
+    - name: Join Master and Worker nodes | Join Master nodes
+      ansible.builtin.command: "{{ hostvars['master01'].join_master }}"
+      when: inventory_hostname in groups['masters'] and inventory_hostname != "master01"
+
+    - name: Join Master and Worker nodes | Set join command for Worker
+      ansible.builtin.set_fact:
+        join_worker: "{{ join_command.stdout_lines[0] }}"
+      when: inventory_hostname == "master01"
+
+    - name: Join Master and Worker nodes | Join Worker nodes
+      ansible.builtin.command: "{{ hostvars['master01'].join_worker }}"
+      when: inventory_hostname in groups['workers']

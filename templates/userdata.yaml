@@ -1,0 +1,13 @@
+#cloud-config
+users:
+  - name: ${name}
+    ssh-authorized-keys:
+      - ${public_key}
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    groups: wheel
+    shell: /bin/bash
+runcmd:
+  - rm -f /etc/machine-id
+  - systemd-machine-id-setup
+# packages:
+#   - tree

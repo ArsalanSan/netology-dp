@@ -1,0 +1,16 @@
+---
+loadbalance_host: "lbnode01"
+url_network_addon: "https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/calico.yaml"
+url_docker: "https://download.docker.com/linux/centos/docker-ce.repo"
+url_jenkins: "https://pkg.jenkins.io/redhat-stable/jenkins.repo"
+k8s_version: "1.29"
+path_volume: "/opt/nfs"
+pod_network_cidr: "10.244.0.0/16"
+sysctl_param:
+  - net.bridge.bridge-nf-call-iptables
+  - net.ipv4.ip_forward
+  - net.bridge.bridge-nf-call-ip6tables
+packages:
+  - kubelet
+  - kubeadm
+  - kubectl

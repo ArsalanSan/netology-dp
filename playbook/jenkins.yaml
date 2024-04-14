@@ -1,0 +1,62 @@
+- name: Install Jenkins on Almalinux 9  | Install and configuration
+  gather_facts: true
+  hosts: devtools
+  become: true
+  tasks:   
+    - name: Add official Docker Repository
+      ansible.builtin.get_url:
+        url: "{{ url_docker }}"
+        dest: /etc/yum.repos.d/docker-ce.repo
+        mode: "0644"
+
+    - name: Add Jenkins repository
+      ansible.builtin.get_url:
+        url: "{{ url_jenkins }}"
+        dest: /etc/yum.repos.d/jenkins.repo
+        mode: "0644"
+
+    - name: Add the Kubernetes repository
+      ansible.builtin.blockinfile:
+        path: /etc/yum.repos.d/kubernetes.repo
+        create: true
+        block: |
+          [kubernetes]
+          name=Kubernetes
+          baseurl=https://pkgs.k8s.io/core:/stable:/v{{ k8s_version }}/rpm/
+          enabled=1
+          gpgcheck=1
+          gpgkey=https://pkgs.k8s.io/core:/stable:/v{{ k8s_version }}/rpm/repodata/repomd.xml.key
+          #exclude=kubelet kubeadm kubectl cri-tools kubernetes-cni
+
+    - name: Import a key from a url
+      ansible.builtin.rpm_key:
+        state: present
+        key: https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+
+    - name: Install packages
+      ansible.builtin.dnf:
+        name:
+          - java-17-openjdk
+          - git
+          - jenkins
+          - docker-ce
+          - kubectl
+        state: present
+    
+    - name: Add the user 'jenkins' group 'docker'
+      ansible.builtin.user:
+        name: jenkins
+        groups: docker
+        append: true
+
+    - name: Enable and started service docker
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Enable and started service jenkins
+      ansible.builtin.systemd:
+        name: jenkins
+        state: started
+        enabled: true

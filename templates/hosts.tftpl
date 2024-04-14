@@ -1,0 +1,42 @@
+---
+masters:
+  hosts:%{ for vm in vms_masters }
+    ${vm["name"]}:  
+      ansible_host: ${vm["default_ip_address"]}
+      ansible_user: ${user}
+%{~ endfor }
+workers:
+  hosts:%{ for vm in vms_workers }
+    ${vm["name"]}:  
+      ansible_host: ${vm["default_ip_address"]}
+      ansible_user: ${user}
+%{~ endfor }
+lbnodes:
+  hosts:%{ for vm in vms_lbnodes }
+    ${vm["name"]}:
+      ansible_host: ${vm["default_ip_address"]}
+      ansible_user: ${user}
+%{~ endfor }
+devtools:
+  hosts:%{ for vm in vms_devtools }
+    ${vm["name"]}:
+      ansible_host: ${vm["default_ip_address"]}
+      ansible_user: ${user}
+%{~ endfor }
+volumes:
+  hosts:%{ for vm in vms_volumes }
+    ${vm["name"]}:
+      ansible_host: ${vm["default_ip_address"]}
+      ansible_user: ${user}
+%{~ endfor }
+cluster:
+  children:
+    masters:
+    workers:
+all:
+  children:
+    masters:
+    workers:
+    lbnodes:
+    volumes:
+    devtools:
