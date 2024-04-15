@@ -3,8 +3,10 @@ pipeline {
     
     stages {
         
-        stage('Clean Workspace') {
-            cleanWs()
+        stage('Clean Workspace'){
+            steps{
+                cleanWs()
+            }
         }
 
         stage('Git clone'){
