@@ -32,7 +32,7 @@ resource "null_resource" "storage_class" {
 
 resource "helm_release" "ingress_nginx" {
   name       = "ingress-nginx"
-  repository = "${path.module}/manifests/ingress-nginx"
+  repository = "${path.module}/manifests/"
   chart      = "ingress-nginx"
   namespace  = "ingress-nginx"
   create_namespace = true
