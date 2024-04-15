@@ -27,6 +27,21 @@
           gpgcheck=1
           gpgkey=https://pkgs.k8s.io/core:/stable:/v{{ k8s_version }}/rpm/repodata/repomd.xml.key
           #exclude=kubelet kubeadm kubectl cri-tools kubernetes-cni
+    
+    - name: Add the terraform mirror repository
+      ansible.builtin.blockinfile:
+        path: /var/lib/jenkins/.terraformrc
+        create: true
+        block: |
+          provider_installation {
+            network_mirror {
+              url = "https://terraform-mirror.yandexcloud.net/"
+              include = ["registry.terraform.io/*/*"]
+            }
+            direct {
+              exclude = ["registry.terraform.io/*/*"]
+            }
+          }
 
     - name: Import a key from a url
       ansible.builtin.rpm_key:
