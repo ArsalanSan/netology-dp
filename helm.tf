@@ -20,7 +20,7 @@ resource "local_file" "storage_class" {
 
 resource "null_resource" "storage_class" {
   provisioner "local-exec" {
-    command = "kubectl apply -f '${path.module}'/manifests/nfs/sc-nfs.yaml"
+    command = "kubectl apply -f ${path.module}/manifests/nfs/sc-nfs.yaml"
   }
 
   triggers = {
@@ -32,7 +32,7 @@ resource "null_resource" "storage_class" {
 
 resource "helm_release" "ingress_nginx" {
   name       = "ingress-nginx"
-  repository = "https://kubernetes.github.io/ingress-nginx"
+  repository = "${path.module}/manifests/ingress-nginx"
   chart      = "ingress-nginx"
   namespace  = "ingress-nginx"
   create_namespace = true

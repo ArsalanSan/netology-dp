@@ -1,4 +1,4 @@
-- name: Install Jenkins on Almalinux 9  | Install and configuration
+- name: Install Jenkins on Almalinux 9 
   gather_facts: true
   hosts: devtools
   become: true
@@ -42,7 +42,13 @@
           - docker-ce
           - kubectl
         state: present
-    
+
+    - name: Install terraform
+      ansible.builtin.unarchive:
+        src: https://hashicorp-releases.yandexcloud.net/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip
+        dest: /usr/local/bin
+        remote_src: true
+
     - name: Add the user 'jenkins' group 'docker'
       ansible.builtin.user:
         name: jenkins
