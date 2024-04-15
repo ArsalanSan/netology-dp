@@ -154,6 +154,16 @@ variable "vms" {
         num_cpus     = 2
         memory       = 2048
         size_disk    = 400
+      },
+      {
+        name         = "nfs02"
+        ipv4_address = "10.122.207.13"
+        ipv4_netmask = "28"
+        ipv4_gateway = "10.122.207.1"
+        dns1         = "77.88.8.1"
+        num_cpus     = 2
+        memory       = 2048
+        size_disk    = 400
       }
     ]
 }
