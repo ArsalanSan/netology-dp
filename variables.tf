@@ -161,7 +161,7 @@ variable "vms" {
         ipv4_netmask = "28"
         ipv4_gateway = "10.122.207.1"
         dns1         = "77.88.8.1"
-        num_cpus     = 2
+        num_cpus     = 4
         memory       = 2048
         size_disk    = 400
       }
