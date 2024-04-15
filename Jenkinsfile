@@ -2,6 +2,11 @@ pipeline {
     agent any
     
     stages {
+        
+        stage('Clean Workspace') {
+            cleanWs()
+        }
+
         stage('Git clone'){
             steps{
                 git branch: 'main', url: 'https://github.com/ArsalanSan/netology-dp.git'
