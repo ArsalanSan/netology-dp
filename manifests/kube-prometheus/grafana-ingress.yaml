@@ -4,12 +4,13 @@ kind: Ingress
 metadata:
   name: ingress-grafana
   namespace: monitoring
-  # annotations:
-  #   nginx.ingress.kubernetes.io/rewrite-target: /
+#  annotations:
+#    nginx.ingress.kubernetes.io/whitelist-source-range: ""
+#    nginx.ingress.kubernetes.io/rewrite-target: / 
 spec:
   ingressClassName: nginx
   rules:
-  - host: grafana.miac.ru
+  - host: grafana.apctech.ru
     http:
       paths:
       - path: /
@@ -21,5 +22,5 @@ spec:
               number: 3000
   # tls:
   #   - hosts:
-  #     - homework.ru
+  #     - grafana.apctech.ru
   #     secretName: nginx-secret

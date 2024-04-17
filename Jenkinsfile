@@ -3,11 +3,11 @@ pipeline {
     
     stages {
         
-        stage('Clean Workspace'){
+        /*stage('Clean Workspace'){
             steps{
                 cleanWs()
             }
-        }
+        }*/
 
         stage('Git clone'){
             steps{
@@ -25,11 +25,11 @@ pipeline {
             }
         }
         
-       /* stage('Apply'){
+       stage('Apply'){
             steps{
                 sh "terraform apply tfplan"
             }
-        }*/
+        }
     }
     
     post {
