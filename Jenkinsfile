@@ -15,10 +15,17 @@ pipeline {
             }
         }
         
+        stage('Init'){
+            steps{
+                withCredentials([string(credentialsId: 'YDBKEY', variable: 'KEY'), string(credentialsId: 'YDBSECRET', variable: 'SECRET')]) {
+                    sh 'terraform init -backend-config="access_key=$KEY" -backend-config="secret_key=$SECRET"'
+                }
+            }
+        }
+
         stage('Plan') {
             steps {
                 withCredentials([file(credentialsId: 'TFVARS', variable: 'VAR')]) {
-                    sh 'terraform init'
                     sh 'terraform plan -out tfplan -var-file=$VAR'
                     sh 'terraform show -no-color tfplan > tfplan.txt'
                 }
