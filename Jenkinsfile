@@ -18,7 +18,7 @@ pipeline {
         stage('Init'){
             steps{
                 withCredentials([string(credentialsId: 'YDBKEY', variable: 'KEY'), string(credentialsId: 'YDBSECRET', variable: 'SECRET')]) {
-                    sh 'terraform init -backend-config="access_key=$KEY" -backend-config="secret_key=$SECRET"'
+                    sh 'terraform init -backend-config="access_key=$KEY" -backend-config="secret_key=$SECRET" | echo "yes"'
                 }
             }
         }
