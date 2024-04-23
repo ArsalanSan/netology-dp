@@ -7,20 +7,31 @@ terraform {
   }
 
   backend "s3" {
-    endpoint   = "storage.yandexcloud.net"
+    endpoint = { 
+      s3 = "https://storage.yandexcloud.net"
+      dynamodb = "https://docapi.serverless.yandexcloud.net/ru-central1/b1gqp5blt5vgc3tneeo8/etndrgmimfr3gv0sp4rk"
+    
     bucket     = "dp-s3-bucket"
     region     = "ru-central1"
     key        = "terraform.tfstate"
+    
+    dynamodb_table    = "table-tfstate"
 
     skip_region_validation      = true
     skip_credentials_validation = true
-
-    dynamodb_endpoint = "https://docapi.serverless.yandexcloud.net/ru-central1/b1gqp5blt5vgc3tneeo8/etndrgmimfr3gv0sp4rk"
-    dynamodb_table    = "table-tfstate"
+    skip_requesting_account_id  = true 
+    skip_s3_checksum            = true 
+    }
   }
 
   required_version = ">=1.3.0"
 }
+
+# provider "yandex" {
+#   service_account_key_file = var.sa_key_file
+#   cloud_id                 = var.cloud_id
+#   folder_id                = var.folder_id
+# }
 
 provider "vsphere" {
   user           = var.credential_vcsa.user
