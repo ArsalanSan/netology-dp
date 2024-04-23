@@ -15,7 +15,7 @@ terraform {
     region     = "ru-central1"
     key        = "terraform.tfstate"
     
-    dynamodb_table    = "table-tfstate"
+    dynamodb_table    = "table-tfsate"
 
     skip_region_validation      = true
     skip_credentials_validation = true
