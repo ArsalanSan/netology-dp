@@ -6,23 +6,23 @@ terraform {
     }
   }
 
-  # backend "s3" {
-  #   endpoints = { 
-  #     s3 = "https://storage.yandexcloud.net"
-  #     dynamodb = "https://docapi.serverless.yandexcloud.net/ru-central1/b1gqp5blt5vgc3tneeo8/etndrgmimfr3gv0sp4rk"
-  #   }
-  #   bucket     = "dp-s3-bucket"
-  #   region     = "ru-central1"
-  #   key        = "terraform.tfstate"
+  backend "s3" {
+    endpoints = { 
+      s3 = "https://storage.yandexcloud.net"
+      dynamodb = "https://docapi.serverless.yandexcloud.net/ru-central1/b1gqp5blt5vgc3tneeo8/etndrgmimfr3gv0sp4rk"
+    }
+    bucket     = "dp-s3-bucket"
+    region     = "ru-central1"
+    key        = "terraform.tfstate"
     
-  #   dynamodb_table    = "table-tfsate"
+    dynamodb_table    = "table-tfsate"
 
-  #   skip_region_validation      = true
-  #   skip_credentials_validation = true
-  #   skip_requesting_account_id  = true 
-  #   skip_s3_checksum            = true 
+    skip_region_validation      = true
+    skip_credentials_validation = true
+    skip_requesting_account_id  = true 
+    skip_s3_checksum            = true 
     
-  # }
+  }
 
   required_version = ">=1.3.0"
 }
