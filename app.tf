@@ -1,25 +1,83 @@
-resource "null_resource" "deploy_application_namespace" {
-  provisioner "local-exec" {
-    command = "kubectl apply -f ${path.module}/manifests/app/namespace-dp-app.yaml"
+resource "kubernetes_namespace" "ns-dp-app" {
+  metadata {
+    name = "dp-app"
+   
+    labels = {
+      app = "dp-app"
+    }
   }
-
-  triggers = {
-      always_run = "${timestamp()}"
-  }
-
+  
   depends_on = [ null_resource.deploy_jenkins ]
 }
 
-resource "null_resource" "deploy_application_svc_dp" {
-  provisioner "local-exec" {
-    command = "kubectl apply -f ${path.module}/manifests/app/service-dp-app.yaml -f ${path.module}/manifests/app/deployment-dp-app.yaml"
+resource "kubernetes_deployment" "dp-app" {
+  metadata {
+    name = "dp-app"
+    namespace = "${kubernetes_namespace.ns-dp-app.metadata.0.labels.app}"
+    labels = {
+      "app.kubernetes.io/name" = "${kubernetes_namespace.ns-dp-app.metadata.0.labels.app}"
+    }
   }
 
-  triggers = {
-      always_run = "${timestamp()}"
+  spec {
+    replicas = 1
+    selector {
+      match_labels = {
+        "app.kubernetes.io/name" = "${kubernetes_namespace.ns-dp-app.metadata.0.labels.app}"
+      }
+    }
+    template {
+      metadata {
+        labels = {
+         "app.kubernetes.io/name" = "${kubernetes_namespace.ns-dp-app.metadata.0.labels.app}"
+        }
+      }
+      spec {
+        container {
+          image = "arsalansan/dp-app:latest"
+          name  = "${kubernetes_namespace.ns-dp-app.metadata.0.labels.app}"
+
+          port {
+            container_port = 80
+          }
+
+          # resources {
+          #   limits = {
+          #     cpu    = "0.5"
+          #     memory = "512Mi"
+          #   }
+          #   requests = {
+          #     cpu    = "250m"
+          #     memory = "50Mi"
+          #   }
+          # }
+        }
+      }
+    }
   }
 
-  depends_on = [ null_resource.deploy_application_namespace ]
+  depends_on = [ kubernetes_namespace.ns-dp-app ]
+}
+ 
+resource "kubernetes_service" "srv-dp-app" {
+  metadata {
+    name = "service-dp-app"
+    namespace = "${kubernetes_namespace.ns-dp-app.metadata.0.labels.app}"
+  }
+  spec {
+    selector = {
+      "app.kubernetes.io/name" = "${kubernetes_namespace.ns-dp-app.metadata.0.labels.app}"
+    }
+    #session_affinity = "ClientIP"
+    port {
+      port = 80
+      target_port = 80
+    }
+
+    #type = "LoadBalancer"
+  }
+  
+  depends_on = [ kubernetes_namespace.ns-dp-app ]
 }
 
 resource "null_resource" "deploy_application_ingress" {
@@ -31,5 +89,5 @@ resource "null_resource" "deploy_application_ingress" {
       always_run = "${timestamp()}"
   }
 
-  depends_on = [ null_resource.deploy_application_namespace ]
+  depends_on = [ kubernetes_namespace.ns-dp-app ]
 }
